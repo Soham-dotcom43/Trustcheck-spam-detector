@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}History - TrustCheck{% endblock %}
+{% block content %}
+<h1>History and statistics</h1>
+
+{% if total == 0 %}
+  <div class="card"><p class="muted">No messages checked yet. <a href="{{ url_for('index') }}">Check your first message.</a></p></div>
+{% else %}
+<div class="stats">
+  <div class="card stat"><div class="stat-n">{{ total }}</div><div class="muted small">Messages checked</div></div>
+  <div class="card stat"><div class="stat-n c-spam">{{ counts.get('spam', 0) }}</div><div class="muted small">Likely spam ({{ (100 * counts.get('spam', 0) / total) | round | int }}%)</div></div>
+  <div class="card stat"><div class="stat-n c-warn">{{ counts.get('suspicious', 0) }}</div><div class="muted small">Suspicious</div></div>
+  <div class="card stat"><div class="stat-n c-safe">{{ counts.get('safe', 0) }}</div><div class="muted small">Looks safe</div></div>
+</div>
+
+<div class="card">
+  <h2>Messages checked per day</h2>
+  <canvas id="trend" height="110"></canvas>
+</div>
+
+<div class="two-col">
+  <div class="card">
+    <h2>Words that most often flagged messages</h2>
+    {% if top_words %}
+    <ul class="reasons">
+      {% for word, n in top_words %}<li><span>{{ word }}</span><span class="push push-spam">{{ n }}</span></li>{% endfor %}
+    </ul>
+    {% else %}<p class="muted small">Nothing flagged yet.</p>{% endif %}
+  </div>
+  <div class="card">
+    <h2>How is the model doing?</h2>
+    {% if judged %}
+      <p>Users answered {{ judged }} time{{ '' if judged == 1 else 's' }}. The model agreed {{ agree }} of {{ judged }} times ({{ (100 * agree / judged) | round | int }}%).</p>
+      <p class="muted small">Run <code>python train.py</code> to retrain with these {{ judged }} correction{{ '' if judged == 1 else 's' }}.</p>
+    {% else %}
+      <p class="muted small">No feedback yet. Use the buttons under a result to tell the model when it is wrong.</p>
+    {% endif %}
+    {% if metrics %}
+      <hr>
+      <p class="small">Test-set F1: <strong>{{ metrics.f1_logistic }}</strong> (Naive Bayes baseline: {{ metrics.f1_naive_bayes }})
+      {% if metrics.f1_indian_subset is not none %}<br>On Indian messages: <strong>{{ metrics.f1_indian_subset }}</strong>{% endif %}
+      <br>Trained on {{ metrics.training_messages }} messages ({{ metrics.feedback_messages }} from feedback).</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <h2>Latest checks</h2>
+  <table>
+    <thead><tr><th>When</th><th>Message</th><th>Result</th><th>Your answer</th><th></th></tr></thead>
+    <tbody>
+    {% for r in recent %}
+      <tr>
+        <td class="nowrap small">{{ r.created_at | ist }}</td>
+        <td>{{ r.text[:90] }}{% if r.text|length > 90 %}...{% endif %}</td>
+        <td><span class="badge badge-{{ r.level }}">{{ (r.spam_prob * 100) | round | int }}%</span></td>
+        <td class="small">{{ {'spam': 'Spam', 'ham': 'Not spam'}.get(r.user_label, '-') }}</td>
+        <td><a href="{{ url_for('result', pred_id=r.id) }}">Open</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script>
+  var data = {{ chart | tojson }};
+  if (window.Chart && data.labels.length) {
+    new Chart(document.getElementById('trend'), {
+      type: 'bar',
+      data: {
+        labels: data.labels,
+        datasets: [
+          {label: 'Likely spam', data: data.spam, backgroundColor: '#d64545'},
+          {label: 'Suspicious', data: data.suspicious, backgroundColor: '#e0a030'},
+          {label: 'Looks safe', data: data.safe, backgroundColor: '#3a9d6a'}
+        ]
+      },
+      options: {scales: {x: {stacked: true}, y: {stacked: true, beginAtZero: true, ticks: {precision: 0}}}}
+    });
+  }
+</script>
+{% endif %}
+{% endblock %}

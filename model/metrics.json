@@ -1,0 +1,7 @@
+{
+  "f1_logistic": 0.9507,
+  "f1_naive_bayes": 0.8083,
+  "f1_indian_subset": 0.9655,
+  "training_messages": 5293,
+  "feedback_messages": 0
+}

@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}TrustCheck{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a class="brand" href="{{ url_for('index') }}">TrustCheck</a>
+      <nav>
+        <a href="{{ url_for('index') }}">Check a message</a>
+        <a href="{{ url_for('history') }}">History</a>
+      </nav>
+    </div>
+  </header>
+  <main class="wrap">
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="wrap footer">
+    TrustCheck gives a suspicion score, not proof. When in doubt, never click unknown links or share an OTP.
+  </footer>
+</body>
+</html>

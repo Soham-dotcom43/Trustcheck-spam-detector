@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}TrustCheck - Spam message detector{% endblock %}
+{% block content %}
+<h1>Is this message safe?</h1>
+<p class="muted">Paste an SMS, WhatsApp or email text. TrustCheck scores it and shows exactly which words and signs made it look suspicious.</p>
+
+{% if error %}<div class="alert">{{ error }}</div>{% endif %}
+
+<form method="post" action="{{ url_for('check') }}" class="card">
+  <label for="text" class="sr">Message</label>
+  <textarea id="text" name="text" rows="5" maxlength="2000" placeholder="Paste a message here...">{{ text }}</textarea>
+  <div class="row">
+    <button type="submit" class="btn">Check message</button>
+    <span class="muted small">Try an example:</span>
+    <button type="button" class="chip-btn" data-example="Dear customer your SBI account will be blocked today. Update your KYC now at http://sbi-kyc-update.in">KYC scam</button>
+    <button type="button" class="chip-btn" data-example="Your parcel is held at customs. Pay Rs 49 delivery fee to release it.">Parcel fee</button>
+    <button type="button" class="chip-btn" data-example="Can you send me the notes of DBMS? Exam is on Monday">Normal chat</button>
+  </div>
+</form>
+
+{% if result %}
+<section class="card result level-{{ result.level }}">
+  <div class="result-head">
+    <div>
+      <div class="badge badge-{{ result.level }}">{{ result.title }}</div>
+      <div class="muted small">Spam probability</div>
+    </div>
+    <div class="percent">{{ result.percent }}%</div>
+  </div>
+  <div class="meter" aria-hidden="true"><div class="meter-fill meter-{{ result.level }}" style="width: {{ result.percent }}%"></div></div>
+
+  <h2>Your message, with the important words marked</h2>
+  <p class="message">{% for s in result.segments %}{% if s.direction %}<mark class="hl hl-{{ s.direction }}-{{ s.strength }}">{{ s.text }}</mark>{% else %}{{ s.text }}{% endif %}{% endfor %}</p>
+  <p class="legend small muted"><mark class="hl hl-spam-2">red</mark> pushed toward spam &nbsp; <mark class="hl hl-safe-2">green</mark> pushed toward normal</p>
+
+  {% if result.signs %}
+  <h2>Warning signs found</h2>
+  <ul class="chips">
+    {% for sign in result.signs %}<li class="chip chip-warn">{{ sign }}</li>{% endfor %}
+  </ul>
+  {% endif %}
+
+  <div class="two-col">
+    <div>
+      <h2>Pushed toward spam</h2>
+      {% if result.spam_reasons %}
+      <ul class="reasons">
+        {% for r in result.spam_reasons %}<li><span>{{ r.label }}</span><span class="push push-spam">+{{ '%.2f' % r.push }}</span></li>{% endfor %}
+      </ul>
+      {% else %}<p class="muted small">Nothing in this message looked like spam.</p>{% endif %}
+    </div>
+    <div>
+      <h2>Pushed toward normal</h2>
+      {% if result.safe_reasons %}
+      <ul class="reasons">
+        {% for r in result.safe_reasons %}<li><span>{{ r.label }}</span><span class="push push-safe">+{{ '%.2f' % r.push }}</span></li>{% endfor %}
+      </ul>
+      {% else %}<p class="muted small">Nothing in this message looked especially normal.</p>{% endif %}
+    </div>
+  </div>
+
+  <hr>
+  {% if saved %}
+    <p class="saved">Thanks! Your answer was saved. It will be used the next time the model is retrained.</p>
+  {% elif row.user_label %}
+    <p class="saved">You marked this message as <strong>{{ 'spam' if row.user_label == 'spam' else 'not spam' }}</strong>.</p>
+  {% endif %}
+  <form method="post" action="{{ url_for('feedback', pred_id=row.id) }}" class="row">
+    <span><strong>Is this message really spam?</strong></span>
+    <button class="btn btn-danger" name="label" value="spam">Yes, it is spam</button>
+    <button class="btn btn-ok" name="label" value="ham">No, it is safe</button>
+  </form>
+</section>
+{% endif %}
+
+<script>
+  document.querySelectorAll('[data-example]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var box = document.getElementById('text');
+      box.value = b.getAttribute('data-example');
+      box.focus();
+    });
+  });
+</script>
+{% endblock %}
