@@ -1,5 +1,7 @@
 # TrustCheck - Spam and Scam Message Detector
 
+**Live demo:** https://trustcheck-spam-detector.onrender.com (the first visit may take about a minute to wake up)
+
 A Flask web app that scores SMS/WhatsApp/email messages as **Likely spam**, **Suspicious** or **Looks safe**,
 and explains *why* by highlighting the words and warning signs that pushed the score.
 
